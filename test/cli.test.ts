@@ -88,7 +88,7 @@ describe("verification runs", () => {
     expect(r.out).toMatch(/Unofficial, read-only tool; not affiliated with Atum/);
   });
 
-  it("renders the sample-001 report exactly as stored in the README example", async () => {
+  it("renders the sample-001 report exactly as stored in the offline replay snapshot", async () => {
     const r = await cli(argsFor(loadSample()));
     await expect(r.out).toMatchFileSnapshot("./fixtures/sample-001.cli-output.txt");
   });

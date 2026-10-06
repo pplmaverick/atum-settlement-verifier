@@ -218,8 +218,9 @@ Please read these before trusting a result.
 8. **The deposit-to-destination search is time-based.** The destination `Fulfilled` event is searched in a window around the deposit time. A fulfillment outside that window (or on a chain whose RPC prunes that history) yields `unknown`, or `fail` if the escrow already released the funds.
 9. **Cross-chain clocks are compared as reported.** V13 compares block timestamps from two different chains.
 10. **Reads are unconfirmed and use a single RPC at a time.** There is no finality check and no cross-checking between providers.
-11. **Contract addresses are a snapshot** (see "Networks").
-12. **The name does not imply any relationship with Atum.** This is an independent tool.
+11. **A real query is many small requests, and public RPCs may rate-limit.** Verifying sample 001 took roughly 60 to 80 small requests (an estimate, not a measured count). The tool spaces requests out (`--request-delay-ms`, default 200) and treats an RPC error as `unknown`, but a busy or throttling public endpoint can still make a run fail or come back inconclusive. Set `ATUM_VERIFY_RPC_<chainId>` (for example `ATUM_VERIFY_RPC_84532`) to use your own RPC endpoint instead.
+12. **Contract addresses are a snapshot** (see "Networks").
+13. **The name does not imply any relationship with Atum.** This is an independent tool.
 
 ## Development
 
@@ -230,7 +231,7 @@ npx vitest run        # offline tests
 ```
 
 - **Tests are fully offline.** A setup file makes any `fetch` call throw unless `LIVE=1` is set, and a fake in-memory JSON-RPC node serves the fixtures.
-- **Fixtures** in `test/fixtures/real/` are raw public-RPC responses for sample 001 (three transaction receipts, the unfiltered `eth_getLogs` answers around them, and block timestamps), saved by `scripts/capture-sample-001.mjs`. They contain only public on-chain data. `test/fixtures/reconstructed/` holds an earlier hand-encoded copy of the receipts that a test compares against the real ones. `test/fixtures/abi/` holds the full published contract ABIs that a test compares against the hand-written event signatures in `src/abi.ts`.
+- **Fixtures** in `test/fixtures/real/` are raw public-RPC responses for sample 001 (three transaction receipts, the unfiltered `eth_getLogs` answers around them, and block timestamps), saved by `scripts/capture-sample-001.mjs`. They contain only public on-chain data. `test/fixtures/abi/` holds the full published contract ABIs that a test compares against the hand-written event signatures in `src/abi.ts`.
 - **Negative tests** change one fact at a time (a one-digit `quoteHash` change, an amount one unit short, another recipient or asset, a missing or extra event, an event from the wrong contract, empty or malformed RPC answers, batch events, ...) and require that the result is never `pass`.
 - **Live test:** skipped by default. `LIVE=1 npx vitest run test/live.test.ts` re-verifies sample 001 from the public RPCs with small windows and paced requests. It needs those RPCs to still serve the sample's history.
 

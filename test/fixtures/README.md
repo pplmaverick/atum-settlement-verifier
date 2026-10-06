@@ -17,10 +17,6 @@ The fake RPC (`test/helpers/fake-chain.ts`) answers `eth_getLogs` by filtering t
 
 Observed quirk: the Arbitrum Sepolia public RPC returns `blockTimestamp: "0x0"` inside `eth_getLogs` results while the receipt has the real value. The verifier never reads that field (see `test/fixtures-real.test.ts`).
 
-## reconstructed/
-
-An earlier, hand-encoded copy of the three receipts (source receipts rebuilt by ABI-encoding event values; the destination receipt was a trimmed real one). Kept only so `fixtures-real.test.ts` can show that the reconstruction agrees with the real data on every semantic field. Placeholders there: `logIndex`, `transactionIndex`, `blockHash`.
-
 ## expected.json
 
 Expected values for the sample, from the research notes of the analysed payment.
@@ -31,4 +27,4 @@ Full ABI JSON of the escrow and fulfillment-proxy contracts as published by publ
 
 ## sample-001.cli-output.txt
 
-The CLI output for the passing run, written by a file-snapshot test and pasted into the README.
+The CLI output for the passing run, replayed offline from `real/` and written by a file-snapshot test. The README shows the output of a real run against the public RPCs instead; the two differ only in the block ranges of V7 and V12.

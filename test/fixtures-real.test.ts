@@ -5,44 +5,6 @@ import { type Json, loadSample, logsOf } from "./helpers/sample.js";
 const read = (rel: string): Json => JSON.parse(readFileSync(new URL(`./fixtures/${rel}`, import.meta.url), "utf8")) as Json;
 const lc = (v: unknown): string => String(v).toLowerCase();
 
-/** Fields compared between a reconstructed and a real log. The others (logIndex, blockHash, transactionIndex, blockTimestamp) are placeholders in the reconstruction. */
-const SEMANTIC = ["address", "topics", "data", "blockNumber", "transactionHash"] as const;
-
-function diffReceipts(label: string, rebuilt: Json, real: Json): string[] {
-  const out: string[] = [];
-  for (const k of ["status", "blockNumber", "transactionHash", "from", "to"] as const) {
-    if (lc(rebuilt[k]) !== lc(real[k])) out.push(`${label}: ${k} differs (${String(rebuilt[k])} vs ${String(real[k])})`);
-  }
-  const a = logsOf(rebuilt);
-  const b = logsOf(real);
-  if (a.length !== b.length) out.push(`${label}: ${a.length} logs vs ${b.length}`);
-  a.forEach((la, i) => {
-    const lb = b[i];
-    if (!lb) return;
-    for (const k of SEMANTIC) {
-      if (JSON.stringify(la[k]).toLowerCase() !== JSON.stringify(lb[k]).toLowerCase()) out.push(`${label}: log ${i} ${k} differs`);
-    }
-  });
-  return out;
-}
-
-describe("real captured fixtures vs the reconstructed ones", () => {
-  it("agree on every semantic field of every log (placeholders excluded)", () => {
-    const diffs = [
-      ...diffReceipts("deposit", read("reconstructed/base-sepolia.deposit-receipt.json"), read("real/base-sepolia.deposit-receipt.json")),
-      ...diffReceipts("release", read("reconstructed/base-sepolia.release-receipt.json"), read("real/base-sepolia.release-receipt.json")),
-      ...diffReceipts("fulfillment", read("reconstructed/arbitrum-sepolia.fulfill-receipt.json"), read("real/arbitrum-sepolia.fulfill-receipt.json")),
-    ];
-    expect(diffs).toEqual([]);
-  });
-
-  it("the placeholder fields in the reconstruction do differ from the real ones (so this comparison is not vacuous)", () => {
-    const rebuilt = logsOf(read("reconstructed/base-sepolia.release-receipt.json"));
-    const real = logsOf(read("real/base-sepolia.release-receipt.json"));
-    expect(rebuilt[0]!.logIndex).not.toBe(real[0]!.logIndex);
-  });
-});
-
 describe("real captured fixtures vs the recorded sample values", () => {
   const s = loadSample();
   const meta = read("real/capture-meta.json") as {
