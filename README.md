@@ -2,7 +2,7 @@
 
 A **read-only** command-line tool that re-checks one cross-chain escrow settlement against on-chain data, using only public RPC endpoints.
 
-> **This project is unofficial and is not affiliated with, endorsed by, or supported by Atum.** The name describes what the tool reads; it does not imply any relationship. **It is not a security audit and it does not guarantee the safety of any funds.** A passing result means only that the checks listed below held for one payment, on the data the RPC returned.
+> **Unofficial. Not affiliated with or endorsed by Atum Labs.** The name describes what the tool reads; it does not imply any relationship, and the tool is not supported by Atum. **This is not a security audit, and it is not a guarantee of the safety of any funds.** A passing result means only that the checks listed below held for one payment, on the data the RPC returned.
 
 It needs no private key and never asks for one. It sends no transactions.
 
@@ -53,14 +53,17 @@ The overall verdict is `pass` only if **every** check passed. Any failure makes 
 
 ## Install
 
-Requires Node.js 20 or newer.
+Requires Node.js 20 or newer. The package is not published to npm; build it from a clone of this repository:
 
 ```sh
+git clone <this repository's URL> atum-settlement-verifier
+cd atum-settlement-verifier
 npm ci
 npm run build
+node dist/cli.js --help
 ```
 
-Run the CLI with `node dist/cli.js` (or `npx atum-verify` from this directory after the build).
+`npm run build` compiles `src/` to `dist/` and marks `dist/cli.js` executable. Run the tool with `node dist/cli.js ...` from the repository directory.
 
 ## Usage
 
@@ -74,8 +77,11 @@ node dist/cli.js \
   --amount         50000 \
   --source-asset   0x036CbD53842c5426634e7929541eC2318f3dCF7e \
   --purchase-id    order_a6516e1fd1be2b9e589f \
-  --payer          0xd2F450592564202a2AbEdC622e703271C996d79d
+  --payer          0xd2F450592564202a2AbEdC622e703271C996d79d \
+  --lookback-blocks 40000 --dest-lookahead-seconds 600 --request-delay-ms 300
 ```
+
+The last line only narrows the search windows and spaces out the requests; the first two lines of options are the minimum.
 
 Options:
 
@@ -91,6 +97,7 @@ Options:
 | `--dest-tx` | Read this destination transaction instead of searching for it |
 | `--from-block`, `--to-block`, `--lookback-blocks` | Source search window when only `--payment-id` is given (default lookback 100000 blocks) |
 | `--max-scan-blocks` | How far past the deposit to look for `Released` / `Refunded` (default 50000) |
+| `--dest-lookahead-seconds` | How long after the deposit to search the destination chain (default 3600) |
 | `--request-delay-ms` | Minimum gap between RPC requests (default 200) |
 | `--json` | Print the report as one JSON document |
 
@@ -101,7 +108,7 @@ Environment variables (public RPC overrides only):
 
 ### Example: sample 001
 
-The command above, replayed from the captured on-chain data (block ranges in the output come from that capture; a live run prints its own):
+This is the real output of the command above, run once against the public RPC endpoints on 2026-10-06 at about 11:08 UTC (about 12 hours after the payment; the run took about 39 seconds at 300 ms between requests). It exited with code 0. The same command replayed offline from the captured fixtures produces the same report except for two block ranges that depend on how far the chain had advanced: the destination search window in V7 and the refund scan range in V12.
 
 ```text
 atum-settlement-verifier 0.0.1
@@ -124,7 +131,7 @@ V6   PASS         one-cross-chain-sample  DepositCommitments.depositRequestHash 
 V6b  PASS         one-cross-chain-sample  The payment id equals Deposited.depositId
      -> payment id equals Deposited.depositId
 V7   PASS         one-cross-chain-sample  Destination proxy emitted Fulfilled with the same quoteHash as Deposited
-     -> Fulfilled from 0x1F1F8FA642bc5F530ba37F1Db3a656E9eB8BaFeb carries the same quoteHash (destination blocks 316289781..316291185)
+     -> Fulfilled from 0x1F1F8FA642bc5F530ba37F1Db3a656E9eB8BaFeb carries the same quoteHash (destination blocks 316289786..316293379)
 V8   PASS         one-cross-chain-sample  Fulfilled.to, token and amount equal the expected destination address, asset and amount
      -> Fulfilled to 0xfd1290aC16f8FCfd4B84c5b1604bA0E1aE1A273f, token 0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d, amount 50000 as expected
 V9   PASS         one-cross-chain-sample  Destination tx contains an ERC20 Transfer to the recipient matching Fulfilled
@@ -134,7 +141,7 @@ V10  PASS         one-cross-chain-sample  Deposited.settler equals Fulfilled.set
 V11  PASS         one-cross-chain-sample  Released exists for the depositId and the settler received amount - feeAmount
      -> Released in 0x8194ed69a06b7b90f06aae2ee3196913546ab25bbd4e5e15b46b0053224d1341; settler received amount - fee = 49990
 V12  PASS         partial-sample          No Refunded event for the depositId (only within the scanned block range)
-     -> no Refunded for this depositId in blocks 47751527..47751647 (scan reached the chain head)
+     -> no Refunded for this depositId in blocks 47751527..47758308 (scan reached the chain head)
 V13  PASS         one-cross-chain-sample  Time order: Deposited <= Fulfilled <= Released
      -> deposit 1791271342, fulfilled 1791271343, released 1791271348 (unix seconds; chains' clocks are compared as reported)
 V14  PASS         none                    Batch (*Many) events: detected and reported; their contents are not verified
@@ -178,7 +185,7 @@ Not verified because an option was not given:
 Overall: INCONCLUSIVE (exit code 2)
 ```
 
-The same sample was also verified end to end against live public RPCs (Base Sepolia and Arbitrum Sepolia) once, with all 15 checks passing; that run is the opt-in live test described under "Development".
+All 15 checks passing here says the tool agrees with the one payment it was built from. It says nothing about other payments (see "Known limits").
 
 ## Exit codes
 

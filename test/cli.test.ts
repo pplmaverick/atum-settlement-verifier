@@ -49,6 +49,7 @@ describe("usage errors (exit code 3)", () => {
     ["a negative --markup-bps", [...argsFor(s, ["--markup-bps"]), "--markup-bps", "-1"], /markup-bps|argument/i],
     ["a non-numeric --markup-bps", [...argsFor(s, ["--markup-bps"]), "--markup-bps", "abc"], /--markup-bps must be a non-negative integer/],
     ["a malformed --payer", [...argsFor(s, ["--payer"]), "--payer", "nope"], /--payer must be a 0x address/],
+    ["a non-numeric --dest-lookahead-seconds", [...argsFor(s), "--dest-lookahead-seconds", "soon"], /--dest-lookahead-seconds must be a non-negative integer/],
   ];
   for (const [name, args, re] of cases) {
     it(name, async () => {
@@ -90,6 +91,11 @@ describe("verification runs", () => {
   it("renders the sample-001 report exactly as stored in the README example", async () => {
     const r = await cli(argsFor(loadSample()));
     await expect(r.out).toMatchFileSnapshot("./fixtures/sample-001.cli-output.txt");
+  });
+
+  it("accepts --dest-lookahead-seconds and still passes", async () => {
+    const r = await cli([...argsFor(loadSample()), "--dest-lookahead-seconds", "600"]);
+    expect(r.code).toBe(0);
   });
 
   it("exit 2 and a list of what a missing option leaves unverified", async () => {

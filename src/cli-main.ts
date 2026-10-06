@@ -41,6 +41,7 @@ Optional (checks that need a missing option are reported as "unknown", never as 
   --from-block <n> --to-block <n>   source search window when only --payment-id is given
   --lookback-blocks <n>      source search lookback from the head (default 100000)
   --max-scan-blocks <n>      how far after the deposit to look for Released/Refunded (default 50000)
+  --dest-lookahead-seconds <n>  how long after the deposit to search the destination chain (default 3600)
   --request-delay-ms <n>     minimum gap between RPC requests (default 200)
   --json                     print the report as JSON only
   -h, --help                 show this help
@@ -107,6 +108,7 @@ export function parseCli(argv: string[]): ParsedCli {
         "to-block": { type: "string" },
         "lookback-blocks": { type: "string" },
         "max-scan-blocks": { type: "string" },
+        "dest-lookahead-seconds": { type: "string" },
         "request-delay-ms": { type: "string" },
         json: { type: "boolean" },
         help: { type: "boolean", short: "h" },
@@ -149,6 +151,7 @@ export function parseCli(argv: string[]): ParsedCli {
     ...opt("toBlock", uint("--to-block", s("to-block"))),
     ...opt("lookbackBlocks", uint("--lookback-blocks", s("lookback-blocks"))),
     ...opt("maxScanBlocks", uint("--max-scan-blocks", s("max-scan-blocks"))),
+    ...opt("destLookaheadSeconds", uint("--dest-lookahead-seconds", s("dest-lookahead-seconds"))),
   };
   return out;
 }
