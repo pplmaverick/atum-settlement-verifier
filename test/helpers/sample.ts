@@ -8,7 +8,9 @@ import { FakeChain, type FakeChainOptions } from "./fake-chain.js";
 
 export type Json = Record<string, unknown>;
 
-const load = (name: string): Json => JSON.parse(readFileSync(new URL(`../fixtures/sample-001/${name}`, import.meta.url), "utf8")) as Json;
+const read = (rel: string): unknown => JSON.parse(readFileSync(new URL(`../fixtures/${rel}`, import.meta.url), "utf8"));
+const loadReal = (name: string): Json => read(`real/${name}`) as Json;
+const loadRealLogs = (name: string): Json[] => read(`real/${name}`) as Json[];
 
 export interface Sample {
   expected: {
@@ -22,17 +24,45 @@ export interface Sample {
   fulfill: Json;
   extraSourceLogs: Json[];
   extraDestLogs: Json[];
+  /** The fake nodes pretend their head is the end of the captured log window; anchors are real (block, timestamp) points. */
+  chain: {
+    sourceHead: bigint;
+    destHead: bigint;
+    depositBlock: bigint;
+    depositTs: bigint;
+    destBlock: bigint;
+    destTs: bigint;
+  };
 }
 
-/** Fresh deep copy of the fixtures, safe to mutate. */
+/** Fresh deep copy of the real captured fixtures, safe to mutate. */
 export function loadSample(): Sample {
+  const meta = loadReal("capture-meta.json") as unknown as {
+    chains: { "base-sepolia": { logsWindow: [string, string] }; "arbitrum-sepolia": { logsWindow: [string, string] } };
+    blocks: { deposit: { number: string; timestamp: string }; fulfillment: { number: string; timestamp: string } };
+  };
+  const deposit = loadReal("base-sepolia.deposit-receipt.json");
+  const release = loadReal("base-sepolia.release-receipt.json");
+  const fulfill = loadReal("arbitrum-sepolia.fulfill-receipt.json");
+  // Logs of the OTHER real transactions in the captured windows. The sample's own logs come from its receipts,
+  // so a test that edits a receipt edits what eth_getLogs returns too.
+  const notIn = (receipts: Json[]) => (l: Json) =>
+    !receipts.some((r) => String(r.transactionHash).toLowerCase() === String(l.transactionHash).toLowerCase());
   return {
-    expected: load("expected.json") as unknown as Sample["expected"],
-    deposit: load("base-sepolia.deposit-receipt.json"),
-    release: load("base-sepolia.release-receipt.json"),
-    fulfill: load("arbitrum-sepolia.fulfill-receipt.json"),
-    extraSourceLogs: [],
-    extraDestLogs: [],
+    expected: read("expected.json") as Sample["expected"],
+    deposit,
+    release,
+    fulfill,
+    extraSourceLogs: loadRealLogs("base-sepolia.escrow-logs.json").filter(notIn([deposit, release])),
+    extraDestLogs: loadRealLogs("arbitrum-sepolia.proxy-logs.json").filter(notIn([fulfill])),
+    chain: {
+      sourceHead: BigInt(meta.chains["base-sepolia"].logsWindow[1]),
+      destHead: BigInt(meta.chains["arbitrum-sepolia"].logsWindow[1]),
+      depositBlock: BigInt(meta.blocks.deposit.number),
+      depositTs: BigInt(meta.blocks.deposit.timestamp),
+      destBlock: BigInt(meta.blocks.fulfillment.number),
+      destTs: BigInt(meta.blocks.fulfillment.timestamp),
+    },
   };
 }
 
@@ -61,22 +91,22 @@ export interface Rig {
 }
 
 export function makeRig(s: Sample, over: { src?: Partial<FakeChainOptions>; dst?: Partial<FakeChainOptions> } = {}): Rig {
-  const t = s.expected.timeline as Record<string, number>;
+  const c = s.chain;
   const srcChain = new FakeChain({
     receipts: [s.deposit, s.release],
     extraLogs: s.extraSourceLogs,
-    head: BigInt(t.sourceHead as number),
-    anchorBlock: BigInt(t.depositBlock as number),
-    anchorTs: BigInt(t.depositTimestamp as number),
+    head: c.sourceHead,
+    anchorBlock: c.depositBlock,
+    anchorTs: c.depositTs,
     secondsPerBlock: 2,
     ...over.src,
   });
   const dstChain = new FakeChain({
     receipts: [s.fulfill],
     extraLogs: s.extraDestLogs,
-    head: BigInt(t.fulfillmentBlock as number) + 4000n,
-    anchorBlock: BigInt(t.fulfillmentBlock as number),
-    anchorTs: BigInt(t.fulfillmentTimestamp as number),
+    head: c.destHead,
+    anchorBlock: c.destBlock,
+    anchorTs: c.destTs,
     secondsPerBlock: 0.25,
     ...over.dst,
   });

@@ -51,6 +51,8 @@ export interface ReaderOptions {
   transportFor?: (endpoint: RpcEndpoint) => Transport;
   /** Max number of window shrinks per getLogs call after the RPC rejects a range. Default 6. */
   maxRangeRetries?: number;
+  /** Minimum gap between request starts, in milliseconds (default 0 = no pacing). */
+  requestDelayMs?: number;
 }
 
 export const DEFAULT_MAX_RANGE_RETRIES = 6;
@@ -128,7 +130,17 @@ export function createReader(network: ResolvedNetwork, options: ReaderOptions = 
     endpoints.length === 0 ? 0n : BigInt(Math.min(...endpoints.map((e) => e.earliestBlock ?? 0)));
   const serves = (e: RpcEndpoint, block: bigint) => block >= BigInt(e.earliestBlock ?? 0);
 
+  // Serialises request starts at least `requestDelayMs` apart, so live runs never burst against a public RPC.
+  const delayMs = Math.max(0, options.requestDelayMs ?? 0);
+  let gate: Promise<void> = Promise.resolve();
+  const pace = (): Promise<void> => {
+    if (delayMs === 0) return Promise.resolve();
+    gate = gate.then(() => new Promise<void>((resolve) => setTimeout(resolve, delayMs)));
+    return gate;
+  };
+
   async function request(e: RpcEndpoint, method: string, params: unknown[]): Promise<unknown> {
+    await pace();
     const client = clientFor(e);
     // The method is a plain string here; viem's typed overloads are bypassed on purpose.
     return (client.request as unknown as (a: { method: string; params: unknown[] }) => Promise<unknown>)({ method, params });
@@ -229,12 +241,29 @@ export function createReader(network: ResolvedNetwork, options: ReaderOptions = 
     },
 
     async firstBlockAtOrAfter(ts, head) {
-      let lo = lowestServedBlock();
-      let hi = head;
+      const lowest = lowestServedBlock();
       const headTs = await reader.getBlockTimestamp(head);
       if (!headTs.ok) return fail(`cannot read head block timestamp: ${headTs.reason}`);
       if (headTs.value < ts) return ok(head + 1n);
-      // Invariant: ts(hi) >= ts. Find the smallest block with ts(block) >= ts.
+      // Gallop backwards from the head in doubling steps until a block older than ts is found:
+      // a payment near the head costs a handful of requests instead of a full binary search.
+      let hi = head;
+      let lo = lowest;
+      let step = 1024n;
+      for (;;) {
+        const cand = hi - step;
+        if (cand <= lowest) break;
+        const t = await reader.getBlockTimestamp(cand);
+        if (!t.ok) return fail(`block search failed at ${cand}: ${t.reason}`);
+        if (t.value >= ts) {
+          hi = cand;
+          step *= 2n;
+        } else {
+          lo = cand + 1n;
+          break;
+        }
+      }
+      // Invariant: ts(hi) >= ts. Find the smallest block with ts(block) >= ts in [lo, hi].
       while (lo < hi) {
         const mid = (lo + hi) / 2n;
         const t = await reader.getBlockTimestamp(mid);

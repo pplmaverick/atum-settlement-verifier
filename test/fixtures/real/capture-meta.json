@@ -1,0 +1,141 @@
+{
+  "note": "Raw public-RPC results for sample 001. Block objects are reduced to number and timestamp.",
+  "capturedAtUtc": "2026-10-06T08:07:32.955Z",
+  "chains": {
+    "base-sepolia": {
+      "chainId": "0x14a34",
+      "headAtCapture": "0x2d8a6ae",
+      "logsWindow": [
+        "0x2d8a162",
+        "0x2d8a1df"
+      ]
+    },
+    "arbitrum-sepolia": {
+      "chainId": "0x66eee",
+      "headAtCapture": "0x12da61e9",
+      "logsWindow": [
+        "0x12da36e1",
+        "0x12da3871"
+      ]
+    }
+  },
+  "blocks": {
+    "deposit": {
+      "number": "0x2d8a167",
+      "timestamp": "0x6ac4a1ae"
+    },
+    "release": {
+      "number": "0x2d8a16a",
+      "timestamp": "0x6ac4a1b4"
+    },
+    "fulfillment": {
+      "number": "0x12da37a9",
+      "timestamp": "0x6ac4a1af"
+    }
+  },
+  "counts": {
+    "escrowLogs": 3,
+    "proxyLogs": 1
+  },
+  "calls": [
+    {
+      "label": "base chain id",
+      "chain": "base-sepolia",
+      "method": "eth_chainId",
+      "params": []
+    },
+    {
+      "label": "base head",
+      "chain": "base-sepolia",
+      "method": "eth_blockNumber",
+      "params": []
+    },
+    {
+      "label": "deposit receipt",
+      "chain": "base-sepolia",
+      "method": "eth_getTransactionReceipt",
+      "params": [
+        "0x386f666af482685aeea3f13a6aa904e31333e048c1f2425bf5a9dc74c327de4b"
+      ]
+    },
+    {
+      "label": "release receipt",
+      "chain": "base-sepolia",
+      "method": "eth_getTransactionReceipt",
+      "params": [
+        "0x8194ed69a06b7b90f06aae2ee3196913546ab25bbd4e5e15b46b0053224d1341"
+      ]
+    },
+    {
+      "label": "deposit block",
+      "chain": "base-sepolia",
+      "method": "eth_getBlockByNumber",
+      "params": [
+        "0x2d8a167",
+        false
+      ]
+    },
+    {
+      "label": "release block",
+      "chain": "base-sepolia",
+      "method": "eth_getBlockByNumber",
+      "params": [
+        "0x2d8a16a",
+        false
+      ]
+    },
+    {
+      "label": "escrow logs",
+      "chain": "base-sepolia",
+      "method": "eth_getLogs",
+      "params": [
+        {
+          "address": "0x0F875601504C9179562506AFa34b2D084268869b",
+          "fromBlock": "0x2d8a162",
+          "toBlock": "0x2d8a1df"
+        }
+      ]
+    },
+    {
+      "label": "arbitrum chain id",
+      "chain": "arbitrum-sepolia",
+      "method": "eth_chainId",
+      "params": []
+    },
+    {
+      "label": "fulfillment receipt",
+      "chain": "arbitrum-sepolia",
+      "method": "eth_getTransactionReceipt",
+      "params": [
+        "0xe9e12b6a1edd55371212dd4a313b7b0431eb25154329901c6167c34225e72059"
+      ]
+    },
+    {
+      "label": "fulfillment block",
+      "chain": "arbitrum-sepolia",
+      "method": "eth_getBlockByNumber",
+      "params": [
+        "0x12da37a9",
+        false
+      ]
+    },
+    {
+      "label": "arbitrum head",
+      "chain": "arbitrum-sepolia",
+      "method": "eth_blockNumber",
+      "params": []
+    },
+    {
+      "label": "proxy logs",
+      "chain": "arbitrum-sepolia",
+      "method": "eth_getLogs",
+      "params": [
+        {
+          "address": "0x1F1F8FA642bc5F530ba37F1Db3a656E9eB8BaFeb",
+          "fromBlock": "0x12da36e1",
+          "toBlock": "0x12da3871"
+        }
+      ]
+    }
+  ]
+}

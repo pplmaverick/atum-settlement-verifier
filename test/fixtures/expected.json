@@ -1,5 +1,5 @@
 {
-  "_comment": "Values for sample 001 (Base Sepolia -> Arbitrum Sepolia, x402). Source: the public on-chain data analysed in the research notes.",
+  "_comment": "Values for sample 001 (Base Sepolia -> Arbitrum Sepolia, x402). Source: the public on-chain data analysed in the research notes. Tests compare the real captured fixtures against these.",
   "input": {
     "sourceNetwork": "eip155:84532",
     "destNetwork": "eip155:421614",
@@ -34,7 +34,6 @@
     "releaseBlock": 47751530,
     "releaseTimestamp": 1791271348,
     "fulfillmentBlock": 316290985,
-    "fulfillmentTimestamp": 1791271343,
-    "sourceHead": 47751638
+    "fulfillmentTimestamp": 1791271343
   }
 }

@@ -47,6 +47,8 @@ export interface VerifyDeps {
   readers?: { source?: ChainReader; dest?: ChainReader };
   env?: Readonly<Record<string, string | undefined>>;
   transportFor?: ReaderOptions["transportFor"];
+  /** Minimum gap between RPC request starts, applied to readers this function creates. */
+  requestDelayMs?: number;
 }
 
 export interface NetworkSummary {
@@ -100,6 +102,12 @@ class CheckBook {
     const cur = this.map.get(id);
     if (!cur) throw new Error(`unknown check id ${id}`);
     this.map.set(id, { ...cur, status, detail, ...(evidence ? { evidence } : {}) });
+  }
+  /** Record which flags would let a still-"unknown" check run. */
+  needs(id: string, flags: string[]): void {
+    const cur = this.map.get(id);
+    if (!cur || cur.status !== "unknown") return;
+    this.map.set(id, { ...cur, needs: flags });
   }
   setAll(status: CheckStatus, detail: string): void {
     for (const id of this.map.keys()) this.set(id, status, detail);
@@ -229,7 +237,10 @@ export async function verifyPayment(rawInput: VerifyInput, deps: VerifyDeps = {}
     return finish();
   }
 
-  const ropts: ReaderOptions = deps.transportFor ? { transportFor: deps.transportFor } : {};
+  const ropts: ReaderOptions = {
+    ...(deps.transportFor ? { transportFor: deps.transportFor } : {}),
+    ...(deps.requestDelayMs !== undefined ? { requestDelayMs: deps.requestDelayMs } : {}),
+  };
   const src = deps.readers?.source ?? createReader(srcNet, ropts);
   const dst = deps.readers?.dest ?? createReader(dstNet, ropts);
 
@@ -330,6 +341,7 @@ function checkDepositFields(input: Norm, net: ResolvedNetwork, book: CheckBook, 
     book.set("V2", "fail", `expected exactly one Transfer(${D.depositor} -> escrow, ${D.amount}) on ${D.token} in the deposit tx, found ${moved.length}`);
   } else if (input.sourceAsset === undefined) {
     book.set("V2", "unknown", "Transfer into escrow matches Deposited.amount, but no expected source asset was given (--source-asset)");
+    book.needs("V2", ["--source-asset"]);
   } else if (!addrEq(D.token, input.sourceAsset)) {
     book.set("V2", "fail", `Deposited.token ${D.token} is not the expected source asset ${input.sourceAsset}`);
   } else {
@@ -391,6 +403,7 @@ function checkDepositFields(input: Norm, net: ResolvedNetwork, book: CheckBook, 
       );
     } else {
       book.set("V6", "unknown", "not requested: pass --purchase-id and --payer to check the x402 request_id derivation");
+      book.needs("V6", [...(input.purchaseId === undefined ? ["--purchase-id"] : []), ...(input.payer === undefined ? ["--payer"] : [])]);
     }
   }
 
@@ -403,6 +416,7 @@ function checkDepositFields(input: Norm, net: ResolvedNetwork, book: CheckBook, 
     );
   } else {
     book.set("V6b", "unknown", "not requested: no --payment-id was given (the deposit was located by --source-tx)");
+    book.needs("V6b", ["--payment-id"]);
   }
 }
 

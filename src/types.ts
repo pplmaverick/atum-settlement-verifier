@@ -18,6 +18,8 @@ export interface CheckResult {
   detail: string;
   /** Raw values that were compared, for the JSON output. */
   evidence?: Record<string, string>;
+  /** CLI flags that were not given and, if given, would let this check run. Only set on "unknown" results. */
+  needs?: string[];
 }
 
 export type OverallVerdict =
