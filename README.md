@@ -28,6 +28,8 @@ Given a payment id (or the source deposit transaction), the tool finds the escro
 | V13 | Time order: deposit <= fulfillment <= release | one cross-chain sample |
 | V14 | Batch (`*Many`) events: detected and reported, never verified | none: no real batch sample exists |
 
+**A `PASS` on V14 only means that no batch (`*Many`) events were found in the scanned block ranges. It does not mean that a batch settlement has been verified:** batch events are never decoded into checks, and a batch settlement is reported as `unsupported` (or `unknown`), not as a pass.
+
 ### Result vocabulary (fail-closed)
 
 Every check ends in exactly one of:
@@ -56,7 +58,7 @@ The overall verdict is `pass` only if **every** check passed. Any failure makes 
 Requires Node.js 20 or newer. The package is not published to npm; build it from a clone of this repository:
 
 ```sh
-git clone <this repository's URL> atum-settlement-verifier
+git clone https://github.com/pplmaverick/atum-settlement-verifier.git atum-settlement-verifier
 cd atum-settlement-verifier
 npm ci
 npm run build
@@ -108,7 +110,7 @@ Environment variables (public RPC overrides only):
 
 ### Example: sample 001
 
-This is the real output of the command above, run once against the public RPC endpoints on 2026-10-06 at about 11:08 UTC (about 12 hours after the payment; the run took about 39 seconds at 300 ms between requests). It exited with code 0. The same command replayed offline from the captured fixtures produces the same report except for two block ranges that depend on how far the chain had advanced: the destination search window in V7 and the refund scan range in V12.
+This is the real output of the command above, run once against the public RPC endpoints on 2026-10-06 at about 11:08 UTC (about 4 hours, 3 h 46 min, after the deposit block, which is dated 07:22 UTC; the run took about 39 seconds at 300 ms between requests). It exited with code 0. The same command replayed offline from the captured fixtures produces the same report except for two block ranges that depend on how far the chain had advanced: the destination search window in V7 and the refund scan range in V12.
 
 ```text
 atum-settlement-verifier 0.0.1
