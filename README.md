@@ -83,7 +83,7 @@ node dist/cli.js \
   --lookback-blocks 40000 --dest-lookahead-seconds 600 --request-delay-ms 300
 ```
 
-The last line only narrows the search windows and spaces out the requests; the first two lines of options are the minimum.
+The minimum flags are `--source-network`, `--dest-network`, `--payment-id` (or `--source-tx`), `--dest-address`, `--dest-asset` and `--amount`. The other flags enable V2 (`--source-asset`) and V6 (`--purchase-id` with `--payer`), or narrow the search windows and space out the requests (`--lookback-blocks`, `--dest-lookahead-seconds`, `--request-delay-ms`). With only the minimum flags the run cannot be a full pass: V2 and V6 report `UNKNOWN` and the exit code is 2.
 
 Options:
 
@@ -110,7 +110,9 @@ Environment variables (public RPC overrides only):
 
 ### Example: sample 001
 
-This is the real output of the command above, run once against the public RPC endpoints on 2026-10-06 at about 11:08 UTC (about 4 hours, 3 h 46 min, after the deposit block, which is dated 07:22 UTC; the run took about 39 seconds at 300 ms between requests). It exited with code 0. The same command replayed offline from the captured fixtures produces the same report except for two block ranges that depend on how far the chain had advanced: the destination search window in V7 and the refund scan range in V12.
+This is the real output of the command above, run once against the public RPC endpoints on 2026-10-06 at about 11:08 UTC (3 h 46 min (about 4 hours) after the deposit block, which is dated 07:22 UTC; the run took about 39 seconds at 300 ms between requests). It exited with code 0.
+
+The offline replay from the captured fixtures (the snapshot used by the tests) does not pass `--lookback-blocks` or `--dest-lookahead-seconds`, so it uses the default search windows, and its fake chain ends at the end of the captured block window. Its report is the same as the real one except for two block ranges: the destination search range in V7 (`316289781..316291185` offline, `316289786..316293379` in the real run) and the refund scan range in V12 (`47751527..47751647` offline, `47751527..47758308` in the real run). All 15 checks, their statuses and every value read from chain are identical.
 
 ```text
 atum-settlement-verifier 0.0.1
@@ -193,7 +195,7 @@ All 15 checks passing here says the tool agrees with the one payment it was buil
 
 | Code | Meaning |
 | --- | --- |
-| 0 | The overall verdict is `pass`: every check passed. Nothing else exits 0 |
+| 0 | For a verification run: the overall verdict is `pass`, every check passed, and no other verification outcome exits 0. (`--help` and `--version` also exit 0; they verify nothing, so only a verification run's 0 means `pass`) |
 | 1 | At least one check failed |
 | 2 | Inconclusive: some check is `unknown` or `unsupported` and none failed (also used for unexpected internal errors) |
 | 3 | Usage error: bad or missing options. Nothing was queried |
@@ -202,7 +204,7 @@ All 15 checks passing here says the tool agrees with the one payment it was buil
 
 Network settings live in `src/config/testnet.ts` and `src/config/mainnet.ts`: the escrow, fulfillment proxy, `quote_selector` and verifier addresses, default public RPC endpoints, and the `eth_getLogs` block range per endpoint.
 
-- **Testnet:** Base Sepolia, Arbitrum Sepolia, Tempo Moderato. The addresses are a snapshot of the gateway's `/v1/defaults` response. Re-check them against the gateway before relying on the tool: the gateway is the source of truth, this repository is not.
+- **Testnet:** Base Sepolia, Arbitrum Sepolia, Tempo Moderato. **Tempo Moderato is configured, but no Tempo Moderato settlement has been analysed, so it is unverified;** only Base Sepolia and Arbitrum Sepolia were checked against a real sample. The addresses are a snapshot of the gateway's `/v1/defaults` response. Re-check them against the gateway before relying on the tool: the gateway is the source of truth, this repository is not.
 - **Mainnet (experimental):** Base and Arbitrum One. Addresses come from the mainnet gateway's `/v1/defaults`. **No mainnet settlement has been analysed**, so results involving a mainnet network are labelled experimental.
 - A network that is not configured is reported as `unsupported`.
 
