@@ -1,0 +1,15 @@
+node_modules/
+dist/
+coverage/
+.DS_Store
+
+# Never commit secrets or run output
+.env
+.env.*
+!.env.example
+logs/
+*.log
+*.key
+*.pem
+*.keystore
+keystore*

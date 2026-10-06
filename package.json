@@ -1,0 +1,33 @@
+{
+  "name": "atum-settlement-verifier",
+  "version": "0.0.1",
+  "description": "Unofficial, read-only CLI that checks a cross-chain escrow settlement against on-chain data. Not affiliated with Atum. Verified against one sample only.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "atum-verify": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:live": "LIVE=1 vitest run test/live.test.ts"
+  },
+  "dependencies": {
+    "viem": "^2.57.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
+  }
+}
