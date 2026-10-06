@@ -3,6 +3,8 @@
  * data was fetched, parsed, and compared successfully. Anything else is one of the
  * other three states, never a silent pass.
  */
+import type { EvidenceLevel } from "./checks.js";
+
 export type CheckStatus = "pass" | "fail" | "unknown" | "unsupported";
 
 export interface CheckResult {
@@ -10,6 +12,8 @@ export interface CheckResult {
   id: string;
   description: string;
   status: CheckStatus;
+  /** How much real-world evidence backs this check's logic (not whether it passed). */
+  support: EvidenceLevel;
   /** Human-readable reason, including the compared values where useful. */
   detail: string;
   /** Raw values that were compared, for the JSON output. */

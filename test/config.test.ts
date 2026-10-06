@@ -49,8 +49,8 @@ describe("network config", () => {
     expect(garbage.rpcs[0]?.getLogsMaxRange).toBe(50_000);
   });
 
-  it("leaves Tempo mainnet without a default RPC", () => {
-    expect(resolveNetwork("eip155:4217", {})!.rpcs).toHaveLength(0);
+  it("does not configure Tempo mainnet", () => {
+    expect(resolveNetwork("eip155:4217", {})).toBeUndefined();
   });
 });
 
